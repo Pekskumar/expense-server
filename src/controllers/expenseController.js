@@ -16,11 +16,12 @@ exports.createExpense = async (req, res) => {
       type, // Add type to the new Expense object
       category, // Add category
       paymentMode, // Add paymentMode
+      createdBy : userId
     });
 
     const savedExpense = await expense.save();
 
-
+    
 
     return res.send(
       getResponse(1, "Expense created successfully.", savedExpense)
@@ -33,9 +34,9 @@ exports.createExpense = async (req, res) => {
 
 exports.getExpenses = async (req, res) => {
   try {
-    const { userId } = req.user;
-
-    const expenses = await Expense.find({ userId });
+    const { userId } = req.body;
+    
+    const expenses = await Expense.find({ createdBy: userId });
 
     return res.send(getResponse(1, "Expenses fetched successfully.", expenses));
   } catch (error) {
@@ -52,7 +53,7 @@ exports.updateExpense = async (req, res) => {
 
     const expense = await Expense.findOneAndUpdate(
       { _id: id, userId },
-      { title, amount, date, description, type, category, paymentMode },
+      { title, amount, date, description,type, category, paymentMode  },
       { new: true }
     );
 

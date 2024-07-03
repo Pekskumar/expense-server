@@ -9,6 +9,7 @@ const ExpenseSchema = new mongoose.Schema({
   type: { type: String, required: true }, // Added type field with required flag
   category: { type: String }, // Added category field
   paymentMode: { type: String }, // Added paymentMode field
+  createdBy: { type: mongoose.Schema.Types.ObjectId,ref: "User", default: null },
 },{timestamps:true});
 
 const Expense = mongoose.model("Expense", ExpenseSchema);
