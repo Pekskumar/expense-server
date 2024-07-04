@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 exports.createAdminUser = async (req, res) => {
   try {
     const { displayname, emailid, password, createdBy } = req.body;
-    
+
     const existingUser = await User.findOne({ emailid });
 
     if (existingUser) {
@@ -68,14 +68,11 @@ exports.createAdminUser = async (req, res) => {
 
 exports.createClientUser = async (req, res) => {
   try {
-    const { displayname, emailid, password, createdBy } = req.body;  
-    const existingUser = await User.findOne({ emailid });    
-    // if (existingUser) {
-    //   // Store the attempted email in a log or database
-    //   await saveDuplicateEmailLog(displayname, emailid, password, createdBy);
-
-    //   return res.send(getResponse(0, "User already exists.", []));
-    // }
+    const { displayname, emailid, password, createdBy } = req.body;
+    const existingUser = await User.findOne({ emailid });
+    if (existingUser) {
+      return res.send(getResponse(0, "User already exists.", []));
+    }
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -104,7 +101,6 @@ exports.createClientUser = async (req, res) => {
     );
   } catch (error) {
     if (error.code === 11000 && error.keyPattern && error.keyValue) {
-      await saveDuplicateEmailLog(error.keyValue.emailid); // Store attempted email
       return res.send(getResponse(0, `Email '${error.keyValue.emailid}' is already registered.`, []));
     }
     console.error("Error in createClientUser:", error);
@@ -112,42 +108,6 @@ exports.createClientUser = async (req, res) => {
   }
 };
 
-// Function to log or store duplicate email attempts
-async function saveDuplicateEmailLog(displayname, emailid, password, createdBy) {
-  try {
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user document
-    const userDocument = new User({
-      displayname,
-      emailid,
-      password: hashedPassword,
-      usertype: "client",
-      createdBy,
-    });
-
-    // Save user to database
-    let userData = await userDocument.save();
-
-    const token = jwt.sign(
-      { userId: userData._id, emailid: userData.emailid },
-      JWT_SECRET
-    );
-
-    return res.send(
-      getResponse(1, "User created successfully.", { token, user: userData })
-    );
-
-    // Here you can implement logic to store the email in a log collection or database
-    console.log(`Duplicate email '${emailid}' attempted to be registered.`);
-    // Example: await DuplicateEmailLog.create({ email: email, timestamp: new Date() });
-  } catch (error) {
-    console.error("Error saving duplicate email log:", error);
-    // Handle error if necessary
-  }
-}
 
 
 // Controller for user signin
