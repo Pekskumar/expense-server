@@ -77,11 +77,37 @@ exports.deleteTodo = async (req, res) => {
 // List all Todos
 exports.listTodos = async (req, res) => {
   try {
-    const { userId } = req.body;   
+    const { userId } = req.body; 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1); // Tomorrow's start time
+
+    // Fetch all todos created by the user
     const todos = await Todo.find({ createdBy: userId });
 
+    // Separate todos into today, future, and past
+    const todayTodos = todos.filter(todo => {
+      const todoDate = new Date(todo.date);
+      return todoDate >= today && todoDate < tomorrow; // Today’s tasks
+    }).sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort in ascending order
+
+    const futureTodos = todos.filter(todo => {
+      const todoDate = new Date(todo.date);
+      return todoDate >= tomorrow; // Future tasks
+    }).sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort in ascending order
+
+    const pastTodos = todos.filter(todo => {
+      const todoDate = new Date(todo.date);
+      return todoDate < today; // Past tasks
+    }).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort in descending order
+
+    // Combine the lists: today’s todos, future todos, and past todos
+    const finalList = [...todayTodos, ...futureTodos, ...pastTodos];
+
     return res.send(
-      getResponse(1, "Tasks retrieved successfully.", todos)
+      getResponse(1, "Tasks retrieved successfully.", finalList)
     );
   } catch (error) {
     console.log(error);
