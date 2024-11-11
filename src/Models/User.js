@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema(
     emailid: { type: String, required: true},
     password: { type: String, required: true },
     usertype: { type: String, required: true },
+    profilepic: String,
     createdBy: { type: mongoose.Schema.Types.ObjectId, default: null },
   },
   { timestamps: true }
