@@ -353,8 +353,9 @@ exports.VerifyEmail = async (req, res) => {
     const { emailid } = req.body;
 
     const user = await User.findOne({ emailid });
-    if (!user) return res.json(getResponse("0", "Email not found.", []));
-
+    if (!user) return 
+    // res.json(getResponse("0", "Email not found.", []));
+    res.send(getResponse(0, "Email not found.", []));
     // Define the reset password link
     const resetLink = `${process.env.FRONT_URL}/forgot-password?e=${emailid}`;
     // const resetLink = `http://localhost:3000/expense-tracker/forgot-password?e=${emailid}`;
@@ -445,13 +446,19 @@ exports.VerifyEmail = async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error("Error sending email:", error);
-        return res.json(getResponse("0", "Error sending email.", []));
+        // return res.json(getResponse("0", "Error sending email.", []));
+        return res.send(getResponse(0, "Error sending email.", []));
+
       }
-      return res.json(getResponse("1", "Email sent successfully.", []));
+      // return res.json(getResponse("1", "Email sent successfully.", []));
+      return res.send(getResponse(1, "Email sent successfully.", []));
+
     });
   } catch (error) {
     console.error("Error in VerifyEmail:", error);
-    return res.json(getResponse("0", "INTERNAL_SERVER_ERROR", []));
+    // return res.json(getResponse("0", "INTERNAL_SERVER_ERROR", []));
+    return res.send(getResponse(0, "INTERNAL_SERVER_ERROR", []));
+
   }
 };
 exports.forgotPassword = async (req, res) => {
@@ -470,22 +477,26 @@ exports.forgotPassword = async (req, res) => {
 
     // Check if the password was updated successfully
     if (result.nModified > 0) {
-      return res.json(getResponse("1", "Password reset successfully.", []));
+      // return res.json(getResponse("1", "Password reset successfully.", []));
+      return res.send(getResponse(1, "Password reset successfully.", []));
     } else if (result.modifiedCount > 0) {
       // For some MongoDB configurations, use `modifiedCount`
-      return res.json(getResponse("1", "Password reset successfully.", []));
+      // return res.json(getResponse("1", "Password reset successfully.", []));
+      return res.send(getResponse(1, "Password reset successfully.", []));
     } else {
-      return res.json(
-        getResponse(
-          "0",
-          "Password reset failed. Email not found or password not changed.",
-          []
-        )
-      );
+      return res.send(getResponse(0, "Password reset failed. Email not found or password not changed.", []));
+      // return res.json(
+      //   getResponse(
+      //     "0",
+      //     "Password reset failed. Email not found or password not changed.",
+      //     []
+      //   )
+      // );
     }
   } catch (error) {
     console.error("Error in forgotPassword:", error);
-    return res.json(getResponse("0", "INTERNAL_SERVER_ERROR", []));
+    // return res.json(getResponse("0", "INTERNAL_SERVER_ERROR", []));
+    return res.send(getResponse(0, "INTERNAL_SERVER_ERROR", []));
   }
 };
 
