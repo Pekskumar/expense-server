@@ -356,7 +356,7 @@ exports.VerifyEmail = async (req, res) => {
     if (!user) return res.json(getResponse("0", "Email not found.", []));
 
     // Define the reset password link
-    const resetLink = `https://Pekskumar.github.io/expense-tracker/forgot-password?e=${emailid}`;
+    const resetLink = `${process.env.FRONT_URL}/forgot-password?e=${emailid}`;
     // const resetLink = `http://localhost:3000/expense-tracker/forgot-password?e=${emailid}`;
 
     // Prepare the email options with the provided HTML template
