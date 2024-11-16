@@ -98,7 +98,7 @@ exports.createAdminUser = async (req, res) => {
                             </tr>
                             <tr>
                                 <td style="text-align:center;">
-                                  <a href="https://pekskumar.github.io/expense-tracker/" title="logo" target="_blank">
+                                  <a href="${process.env.FRONT_URL}" title="logo" target="_blank">
                                    Expense-Tracker
                                   </a>
                                 </td>
@@ -393,7 +393,7 @@ exports.VerifyEmail = async (req, res) => {
                             </tr>
                             <tr>
                                 <td style="text-align:center;">
-                                  <a href="https://pekskumar.github.io/expense-tracker/" title="logo" target="_blank">
+                                  <a href="${process.env.FRONT_URL}" title="logo" target="_blank">
                                    Expense-Tracker
                                   </a>
                                 </td>
