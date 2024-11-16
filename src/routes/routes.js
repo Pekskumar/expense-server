@@ -10,6 +10,7 @@ const {
   createClientUser,
   VerifyEmail,
   forgotPassword,
+  updateProfile,
 } = require("../controllers/userController");
 const authMiddleware = require("../middleware/auth");
 const expenseRoutes = require("./expenseRoutes");
@@ -18,6 +19,7 @@ const multer = require("multer");
 const upload = multer();
 
 router.post("/signup",upload.single("profilepic"), createAdminUser);
+router.post("/update-profile",upload.single("profilepic"),authMiddleware, updateProfile);
 router.post("/signin", signInUser);
 router.post("/verifyemail", VerifyEmail);
 router.post("/forgotpassword", forgotPassword);

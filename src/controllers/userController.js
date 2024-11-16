@@ -29,8 +29,7 @@ exports.createAdminUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     let profilepicUrl = "";
     if (req.file) {
-      console.log("req.file ::", req.file);
-
+     
       profilepicUrl = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
@@ -351,8 +350,7 @@ exports.updateUser = async (req, res) => {
 exports.VerifyEmail = async (req, res) => {
   try {
     const { emailid } = req.body;
-    console.log("emailid ::", emailid);
-
+   
     const user = await User.findOne({ emailid });
     if (!user) return res.send(getResponse(0, "Email not found.", []));
     // res.json(getResponse("0", "Email not found.", []));
@@ -520,6 +518,53 @@ exports.deleteUser = async (req, res) => {
     return res.send(getResponse(1, "User deleted successfully.", deletedUser));
   } catch (error) {
     console.error("Error in deleteUser:", error);
+    return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
+  }
+};
+exports.updateProfile = async (req, res) => {
+  try {
+    const { userId } = req.user; // Assuming middleware sets `req.user` after authentication
+    const { displayname, emailid } = req.body;
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.send(getResponse(0, "User not found.", []));
+    }
+
+    let updatedFields = { displayname, emailid };
+
+    // Handle profile picture upload if provided
+    if (req.file) {
+      const profilepicUrl = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            public_id: `profilepic/${emailid || user.emailid}`,
+            fetch_format: "auto",
+            quality: "auto",
+          },
+          (error, result) => {
+            if (error) return reject("Error uploading profile picture.");
+            resolve(result.secure_url);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+      updatedFields.profilepic = profilepicUrl;
+    }
+
+    // Update the user document
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updatedFields },
+      { new: true, runValidators: true }
+    ).select("-password"); // Exclude password from the returned document
+
+    // Respond with success
+    return res.send(getResponse(1, "Profile updated successfully.", updatedUser));
+  } catch (error) {
+    console.error("Error in updateProfile:", error);
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
   }
 };
