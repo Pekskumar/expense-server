@@ -19,8 +19,8 @@ const upload = multer();
 
 router.post("/signup",upload.single("profilepic"), createAdminUser);
 router.post("/signin", signInUser);
-router.post("/verifyemail", upload.any(), VerifyEmail);
-router.post("/forgotpassword", upload.any(), forgotPassword);
+router.post("/verifyemail", VerifyEmail);
+router.post("/forgotpassword", forgotPassword);
 
 router.post("/createclientuser",upload.single("profilepic"), createClientUser);
 router.post("/users", getUserList);

@@ -29,8 +29,8 @@ exports.createAdminUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     let profilepicUrl = "";
     if (req.file) {
-      console.log("req.file ::",req.file);
-      
+      console.log("req.file ::", req.file);
+
       profilepicUrl = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
@@ -351,11 +351,12 @@ exports.updateUser = async (req, res) => {
 exports.VerifyEmail = async (req, res) => {
   try {
     const { emailid } = req.body;
+    console.log("emailid ::", emailid);
 
     const user = await User.findOne({ emailid });
-    if (!user) return 
+    if (!user) return res.send(getResponse(0, "Email not found.", []));
     // res.json(getResponse("0", "Email not found.", []));
-    res.send(getResponse(0, "Email not found.", []));
+
     // Define the reset password link
     const resetLink = `${process.env.FRONT_URL}/forgot-password?e=${emailid}`;
     // const resetLink = `http://localhost:3000/expense-tracker/forgot-password?e=${emailid}`;
