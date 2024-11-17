@@ -181,17 +181,36 @@ exports.createAdminUser = async (req, res) => {
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
   }
 };
-
 exports.createClientUser = async (req, res) => {
   try {
     const { displayname, emailid, password, createdBy } = req.body;
     const existingUser = await User.findOne({ emailid });
+
     if (existingUser) {
       return res.send(getResponse(0, "User already exists.", []));
     }
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    let profilepicUrl = "";
+    if (req.file) {
+      // Upload profile picture to Cloudinary
+      profilepicUrl = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            public_id: `profilepic/${emailid}`,
+            fetch_format: "auto",
+            quality: "auto",
+          },
+          (error, result) => {
+            if (error) return reject("Error uploading profile picture.");
+            resolve(result.secure_url);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+    }
 
     // Create new user document
     const userDocument = new User({
@@ -200,10 +219,103 @@ exports.createClientUser = async (req, res) => {
       password: hashedPassword,
       usertype: "client",
       createdBy,
+      profilepic: profilepicUrl, // Save the profile picture URL
     });
 
     // Save user to database
     let userData = await userDocument.save();
+
+    // Send email with login credentials
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: `${emailid}`,
+      subject: "Your Expense-Tracker Account Details",
+      html: `
+        <!doctype html>
+        <html lang="en-US">
+        <head>
+            <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+            <title>Welcome Email Template</title>
+            <meta name="description" content="Welcome Email Template.">
+            <style type="text/css">
+                a:hover {text-decoration: underline !important;}
+                #mail{ width:100% }
+            </style>
+        </head>
+        <body marginheight="0" topmargin="0" marginwidth="0" style="margin: 0px; width: 100%; background-color: #f2f3f8;" leftmargin="0">
+            <table cellspacing="0" border="0" cellpadding="0" width="100%" bgcolor="#f2f3f8"
+                style="@import url(https://fonts.googleapis.com/css?family=Rubik:300,400,500,700|Open+Sans:300,400,600,700); font-family: 'Open Sans', sans-serif;">
+                <tr>
+                    <td>
+                        <table style="background-color: #f2f3f8; max-width:670px; margin:0 auto;" width="100%" border="0"
+                            align="center" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="height:80px;">&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td style="text-align:center;">
+                                  <a href="${process.env.FRONT_URL}" title="logo" target="_blank">
+                                   Expense-Tracker
+                                  </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height:20px;">&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <table width="95%" border="0" align="center" cellpadding="0" cellspacing="0"
+                                        style="max-width:670px;background:#fff; border-radius:3px; text-align:center;-webkit-box-shadow:0 6px 18px 0 rgba(0,0,0,.06);-moz-box-shadow:0 6px 18px 0 rgba(0,0,0,.06);box-shadow:0 6px 18px 0 rgba(0,0,0,.06);">
+                                        <tr>
+                                            <td style="height:40px;">&nbsp;</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding:0 35px;">
+                                                <h1 style="color:#1e1e2d; font-weight:500; margin:0;font-size:32px;font-family:'Rubik',sans-serif;">Welcome to Expense-Tracker, ${displayname}!</h1>
+                                                <span
+                                                    style="display:inline-block; vertical-align:middle; margin:29px 0 26px; border-bottom:1px solid #cecece; width:100px;"></span>
+                                                <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
+                                                    Here are your login credentials for the platform:
+                                                </p>
+                                                <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
+                                                    <strong>Email:</strong> ${emailid} <br/>
+                                                    <strong>Password:</strong> ${password}
+                                                </p>
+                                                <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
+                                                    Please log in and change your password immediately for security purposes.
+                                                </p>
+                                                <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
+                                                    Cheers,<br/>The Expense-Tracker Team
+                                                </p>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="height:40px;">&nbsp;</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height:20px;">&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td style="height:80px;">&nbsp;</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending email:", error);
+        // Handle the email sending error if needed
+      }
+    });
 
     // Generate JWT token
     const token = jwt.sign(
@@ -225,7 +337,47 @@ exports.createClientUser = async (req, res) => {
 };
 
 
+// exports.createClientUser = async (req, res) => {
+//   try {
+//     const { displayname, emailid, password, createdBy } = req.body;
+//     const existingUser = await User.findOne({ emailid });
+//     if (existingUser) {
+//       return res.send(getResponse(0, "User already exists.", []));
+//     }
 
+//     // Hash the password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Create new user document
+//     const userDocument = new User({
+//       displayname,
+//       emailid,
+//       password: hashedPassword,
+//       usertype: "client",
+//       createdBy,
+//     });
+
+//     // Save user to database
+//     let userData = await userDocument.save();
+
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       { userId: userData._id, emailid: userData.emailid },
+//       JWT_SECRET
+//     );
+
+//     // Respond with success message, token, and user data
+//     return res.send(
+//       getResponse(1, "User created successfully.", { token, user: userData })
+//     );
+//   } catch (error) {
+//     if (error.code === 11000 && error.keyPattern && error.keyValue) {
+//       return res.send(getResponse(0, `Email '${error.keyValue.emailid}' is already registered.`, []));
+//     }
+//     console.error("Error in createClientUser:", error);
+//     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
+//   }
+// };
 // Controller for user signin
 exports.signInUser = async (req, res) => {
   try {
@@ -261,7 +413,6 @@ exports.signInUser = async (req, res) => {
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
   }
 };
-
 // Controller for changing user password
 exports.changePassword = async (req, res) => {
   try {
@@ -321,7 +472,6 @@ exports.getUserList = async (req, res) => {
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
   }
 };
-
 // Controller for updating a user
 exports.updateUser = async (req, res) => {
   try {
@@ -498,7 +648,6 @@ exports.forgotPassword = async (req, res) => {
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR", []));
   }
 };
-
 // Controller for deleting a user
 exports.deleteUser = async (req, res) => {
   try {
