@@ -71,7 +71,7 @@ exports.createAdminUser = async (req, res) => {
     let mailOptions = {
       from: process.env.EMAIL,
       to: `${emailid}`,
-      subject: "Welcome to Expense-Tracker",
+      subject: "Welcome to Money-Tracker",
       html: `
         <!doctype html>
         <html lang="en-US">
@@ -98,7 +98,7 @@ exports.createAdminUser = async (req, res) => {
                             <tr>
                                 <td style="text-align:center;">
                                   <a href="${process.env.FRONT_URL}" title="logo" target="_blank">
-                                   Expense-Tracker
+                                   Money-Tracker
                                   </a>
                                 </td>
                             </tr>
@@ -114,14 +114,14 @@ exports.createAdminUser = async (req, res) => {
                                         </tr>
                                         <tr>
                                             <td style="padding:0 35px;">
-                                                <h1 style="color:#1e1e2d; font-weight:500; margin:0;font-size:32px;font-family:'Rubik',sans-serif;">Welcome to Expense-Tracker, ${displayname}!</h1>
+                                                <h1 style="color:#1e1e2d; font-weight:500; margin:0;font-size:32px;font-family:'Rubik',sans-serif;">Welcome to Money-Tracker, ${displayname}!</h1>
                                                 <span
                                                     style="display:inline-block; vertical-align:middle; margin:29px 0 26px; border-bottom:1px solid #cecece; width:100px;"></span>
                                                 <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
                                                     We’re thrilled to have you on board! If you need any help or have questions, feel free to reach out.
                                                 </p>
                                                 <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
-                                                    Cheers,<br/>The Expense-Tracker Team
+                                                    Cheers,<br/>The Money-Tracker Team
                                                 </p>
                                             </td>
                                         </tr>
@@ -229,7 +229,7 @@ exports.createClientUser = async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL,
       to: `${emailid}`,
-      subject: "Your Expense-Tracker Account Details",
+      subject: "Your Money-Tracker Account Details",
       html: `
         <!doctype html>
         <html lang="en-US">
@@ -255,7 +255,7 @@ exports.createClientUser = async (req, res) => {
                             <tr>
                                 <td style="text-align:center;">
                                   <a href="${process.env.FRONT_URL}" title="logo" target="_blank">
-                                   Expense-Tracker
+                                   Money-Tracker
                                   </a>
                                 </td>
                             </tr>
@@ -271,7 +271,7 @@ exports.createClientUser = async (req, res) => {
                                         </tr>
                                         <tr>
                                             <td style="padding:0 35px;">
-                                                <h1 style="color:#1e1e2d; font-weight:500; margin:0;font-size:32px;font-family:'Rubik',sans-serif;">Welcome to Expense-Tracker, ${displayname}!</h1>
+                                                <h1 style="color:#1e1e2d; font-weight:500; margin:0;font-size:32px;font-family:'Rubik',sans-serif;">Welcome to Money-Tracker, ${displayname}!</h1>
                                                 <span
                                                     style="display:inline-block; vertical-align:middle; margin:29px 0 26px; border-bottom:1px solid #cecece; width:100px;"></span>
                                                 <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
@@ -285,7 +285,7 @@ exports.createClientUser = async (req, res) => {
                                                     Please log in and change your password immediately for security purposes.
                                                 </p>
                                                 <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
-                                                    Cheers,<br/>The Expense-Tracker Team
+                                                    Cheers,<br/>The Money-Tracker Team
                                                 </p>
                                             </td>
                                         </tr>
@@ -507,7 +507,7 @@ exports.VerifyEmail = async (req, res) => {
 
     // Define the reset password link
     const resetLink = `${process.env.FRONT_URL}/reset-password?e=${emailid}`;
-    // const resetLink = `http://localhost:3000/expense-tracker/reset-passwordforgot-password?e=${emailid}`;
+    // const resetLink = `http://localhost:3000/Money-Tracker/reset-passwordforgot-password?e=${emailid}`;
 
     // Prepare the email options with the provided HTML template
     let mailOptions = {
@@ -542,7 +542,7 @@ exports.VerifyEmail = async (req, res) => {
                             <tr>
                                 <td style="text-align:center;">
                                   <a href="${process.env.FRONT_URL}" title="logo" target="_blank">
-                                   Expense-Tracker
+                                   Money-Tracker
                                   </a>
                                 </td>
                             </tr>
@@ -568,7 +568,7 @@ exports.VerifyEmail = async (req, res) => {
                                                     following link and follow the instructions.
                                                 </p>
                                                 <a href="${resetLink}"
-                                                    style="background:#20e277;text-decoration:none !important; font-weight:500; margin-top:35px; color:#fff;text-transform:uppercase; font-size:14px;padding:10px 24px;display:inline-block;border-radius:50px;">Reset
+                                                    style="background:#fb6542;text-decoration:none !important; font-weight:500; margin-top:35px; color:#fff;text-transform:uppercase; font-size:14px;padding:10px 24px;display:inline-block;border-radius:50px;">Reset
                                                     Password</a>
                                             </td>
                                         </tr>
