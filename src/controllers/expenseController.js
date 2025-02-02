@@ -4,7 +4,7 @@ const { getResponse } = require("../utils/utils");
 exports.createExpense = async (req, res) => {
   try {
     const { userId } = req.user;
-    const { title, amount, date, description, type, category, paymentMode } =
+    const { title, amount, date, description, type, category, paymentMode,payby } =
       req.body; // Include all fields
 
     const expense = new Expense({
@@ -12,6 +12,7 @@ exports.createExpense = async (req, res) => {
       title,
       amount,
       date,
+      payby,
       description,
       type, // Add type to the new Expense object
       category, // Add category
@@ -38,19 +39,23 @@ exports.getExpenses = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Query for today's transactions
+    // Query for today's transactions (populating payby field with displayname)
     const todayExpenses = await Expense.find({
       createdBy: userId,
       date: { $gte: today },
-    }).sort({ date: -1 });
+    })
+      .sort({ date: -1 })
+      .populate({ path: "payby", select: "displayname" }); // ✅ Use populate properly
 
     // Query for other expenses before today
     const otherExpenses = await Expense.find({
       createdBy: userId,
       date: { $lt: today },
-    }).sort({ date: -1 });
+    })
+      .sort({ date: -1 })
+      .populate({ path: "payby", select: "displayname" }); // ✅ Ensure displayname is included
 
-    // Combine the lists with today's expenses coming first
+    // Combine the lists with today's expenses first
     const expenses = [...todayExpenses, ...otherExpenses];
 
     return res.send(getResponse(1, "Expenses fetched successfully.", expenses));
@@ -61,15 +66,44 @@ exports.getExpenses = async (req, res) => {
 };
 
 
+// exports.getExpenses = async (req, res) => {
+//   try {
+//     const { userId } = req.body;
+//     const today = new Date();
+//     today.setHours(0, 0, 0, 0);
+
+//     // Query for today's transactions
+//     const todayExpenses = await Expense.find({
+//       createdBy: userId,
+//       date: { $gte: today },
+//     }).sort({ date: -1 });
+
+//     // Query for other expenses before today
+//     const otherExpenses = await Expense.find({
+//       createdBy: userId,
+//       date: { $lt: today },
+//     }).sort({ date: -1 });
+
+//     // Combine the lists with today's expenses coming first
+//     const expenses = [...todayExpenses, ...otherExpenses];
+
+//     return res.send(getResponse(1, "Expenses fetched successfully.", expenses));
+//   } catch (error) {
+//     console.log(error);
+//     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
+//   }
+// };
+
+
 exports.updateExpense = async (req, res) => {
   try {
     const { userId } = req.user;
     const { id } = req.params;
-    const { title, amount, date, description, type, category, paymentMode } = req.body;
+    const { title, amount, date, description, type, category, paymentMode ,payby} = req.body;
 
     const expense = await Expense.findOneAndUpdate(
       { _id: id, userId },
-      { title, amount, date, description,type, category, paymentMode  },
+      { title, amount, date, description,type, category, paymentMode,payby  },
       { new: true }
     );
 

@@ -5,6 +5,7 @@ const ExpenseSchema = new mongoose.Schema({
   title: { type: String, required: true },
   amount: { type: Number, required: true },
   date: { type: Date, required: true },
+  payby: { type: String, required: true,ref: "User" },
   description: { type: String },
   type: { type: String, required: true }, // Added type field with required flag
   category: { type: String }, // Added category field

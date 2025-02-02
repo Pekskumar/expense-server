@@ -4,6 +4,7 @@ const { getResponse } = require("../utils/utils");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const cloudinary = require("../config/cloudinaryConfig");
+const Expense = require("../Models/Expense");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 let transporter = nodemailer.createTransport({
@@ -449,29 +450,97 @@ exports.changePassword = async (req, res) => {
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
   }
 };
-
 exports.getUserList = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId } = req.body; // Logged-in user ID
 
-    // Build the query object
+    // Build query to fetch relevant users
     let query = {};
     if (userId) {
-      query = {
-        $or: [{ createdBy: userId }, { _id: userId }],
-      };
+      query = { $or: [{ createdBy: userId }, { _id: userId }] };
     }
 
-    // Find users based on the query
+    // Fetch all relevant users
     const users = await User.find(query, "-password"); // Exclude password field
 
-    // Respond with the list of users
-    return res.send(getResponse(1, "User list retrieved successfully.", users));
+    if (!users.length) {
+      return res.send(getResponse(1, "No users found.", []));
+    }
+
+    // Get all user IDs
+    const userIds = users.map(user => user._id.toString());
+
+    // Aggregate total income and total expense based ONLY on payby
+    const expenses = await Expense.aggregate([
+      {
+        $match: { payby: { $in: userIds } }, // Only match transactions where user is payby
+      },
+      {
+        $group: {
+          _id: "$payby",
+          totalExpense: {
+            $sum: { $cond: [{ $eq: ["$type", "Expense"] }, "$amount", 0] },
+          },
+          totalIncome: {
+            $sum: { $cond: [{ $eq: ["$type", "Income"] }, "$amount", 0] },
+          },
+        },
+      },
+    ]);
+
+    // Convert aggregation result into a map for quick lookup
+    const expenseMap = {};
+    expenses.forEach(exp => {
+      expenseMap[exp._id.toString()] = {
+        totalExpense: exp.totalExpense,
+        totalIncome: exp.totalIncome,
+      };
+    });
+
+    // Attach totalExpense and totalIncome to each user
+    const usersWithTotals = users.map(user => {
+      const totals = expenseMap[user._id.toString()] || {
+        totalExpense: 0,
+        totalIncome: 0,
+      };
+      return {
+        ...user.toObject(),
+        totalExpense: totals.totalExpense,
+        totalIncome: totals.totalIncome,
+      };
+    });
+
+    // Respond with the updated user list
+    return res.send(getResponse(1, "User list retrieved successfully.", usersWithTotals));
   } catch (error) {
     console.error("Error in getUserList:", error);
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
   }
 };
+
+
+// exports.getUserList = async (req, res) => {
+//   try {
+//     const { userId } = req.body;
+
+//     // Build the query object
+//     let query = {};
+//     if (userId) {
+//       query = {
+//         $or: [{ createdBy: userId }, { _id: userId }],
+//       };
+//     }
+
+//     // Find users based on the query
+//     const users = await User.find(query, "-password"); // Exclude password field
+
+//     // Respond with the list of users
+//     return res.send(getResponse(1, "User list retrieved successfully.", users));
+//   } catch (error) {
+//     console.error("Error in getUserList:", error);
+//     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
+//   }
+// };
 // Controller for updating a user
 exports.updateUser = async (req, res) => {
   try {
