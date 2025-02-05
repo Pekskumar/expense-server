@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const cloudinary = require("../config/cloudinaryConfig");
 const Expense = require("../Models/Expense");
+const Todo = require("../Models/Todo");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 let transporter = nodemailer.createTransport({
@@ -30,7 +31,6 @@ exports.createAdminUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     let profilepicUrl = "";
     if (req.file) {
-     
       profilepicUrl = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
@@ -330,13 +330,18 @@ exports.createClientUser = async (req, res) => {
     );
   } catch (error) {
     if (error.code === 11000 && error.keyPattern && error.keyValue) {
-      return res.send(getResponse(0, `Email '${error.keyValue.emailid}' is already registered.`, []));
+      return res.send(
+        getResponse(
+          0,
+          `Email '${error.keyValue.emailid}' is already registered.`,
+          []
+        )
+      );
     }
     console.error("Error in createClientUser:", error);
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
   }
 };
-
 
 // exports.createClientUser = async (req, res) => {
 //   try {
@@ -468,7 +473,7 @@ exports.getUserList = async (req, res) => {
     }
 
     // Get all user IDs
-    const userIds = users.map(user => user._id.toString());
+    const userIds = users.map((user) => user._id.toString());
 
     // Aggregate total income and total expense based ONLY on payby
     const expenses = await Expense.aggregate([
@@ -488,30 +493,53 @@ exports.getUserList = async (req, res) => {
       },
     ]);
 
-    // Convert aggregation result into a map for quick lookup
+    // ✅ Aggregate total todos per user where addedby matches user ID
+    const todos = await Todo.aggregate([
+      {
+        $match: { addedby: { $in: userIds } }, // Match only todos where user is addedby
+      },
+      {
+        $group: {
+          _id: "$addedby",
+          totalTodos: { $sum: 1 }, // Count total todos per user
+        },
+      },
+    ]);
+
+    // Convert aggregation results into maps for quick lookup
     const expenseMap = {};
-    expenses.forEach(exp => {
+    expenses.forEach((exp) => {
       expenseMap[exp._id.toString()] = {
         totalExpense: exp.totalExpense,
         totalIncome: exp.totalIncome,
       };
     });
 
-    // Attach totalExpense and totalIncome to each user
-    const usersWithTotals = users.map(user => {
+    const todoMap = {};
+    todos.forEach((todo) => {
+      todoMap[todo._id.toString()] = todo.totalTodos;
+    });
+
+    // Attach totalExpense, totalIncome, and totalTodos to each user
+    const usersWithTotals = users.map((user) => {
       const totals = expenseMap[user._id.toString()] || {
         totalExpense: 0,
         totalIncome: 0,
       };
+      const totalTodos = todoMap[user._id.toString()] || 0;
+
       return {
         ...user.toObject(),
         totalExpense: totals.totalExpense,
         totalIncome: totals.totalIncome,
+        totalTodos: totalTodos, // ✅ Include totalTodos in response
       };
     });
 
     // Respond with the updated user list
-    return res.send(getResponse(1, "User list retrieved successfully.", usersWithTotals));
+    return res.send(
+      getResponse(1, "User list retrieved successfully.", usersWithTotals)
+    );
   } catch (error) {
     console.error("Error in getUserList:", error);
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
@@ -569,7 +597,7 @@ exports.updateUser = async (req, res) => {
 exports.VerifyEmail = async (req, res) => {
   try {
     const { emailid } = req.body;
-   
+
     const user = await User.findOne({ emailid });
     if (!user) return res.send(getResponse(0, "Email not found.", []));
     // res.json(getResponse("0", "Email not found.", []));
@@ -666,17 +694,14 @@ exports.VerifyEmail = async (req, res) => {
         console.error("Error sending email:", error);
         // return res.json(getResponse("0", "Error sending email.", []));
         return res.send(getResponse(0, "Error sending email.", []));
-
       }
       // return res.json(getResponse("1", "Email sent successfully.", []));
       return res.send(getResponse(1, "Email sent successfully.", []));
-
     });
   } catch (error) {
     console.error("Error in VerifyEmail:", error);
     // return res.json(getResponse("0", "INTERNAL_SERVER_ERROR", []));
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR", []));
-
   }
 };
 exports.forgotPassword = async (req, res) => {
@@ -702,7 +727,13 @@ exports.forgotPassword = async (req, res) => {
       // return res.json(getResponse("1", "Password reset successfully.", []));
       return res.send(getResponse(1, "Password reset successfully.", []));
     } else {
-      return res.send(getResponse(0, "Password reset failed. Email not found or password not changed.", []));
+      return res.send(
+        getResponse(
+          0,
+          "Password reset failed. Email not found or password not changed.",
+          []
+        )
+      );
       // return res.json(
       //   getResponse(
       //     "0",
@@ -780,7 +811,9 @@ exports.updateProfile = async (req, res) => {
     ).select("-password"); // Exclude password from the returned document
 
     // Respond with success
-    return res.send(getResponse(1, "Profile updated successfully.", updatedUser));
+    return res.send(
+      getResponse(1, "Profile updated successfully.", updatedUser)
+    );
   } catch (error) {
     console.error("Error in updateProfile:", error);
     return res.send(getResponse(0, "INTERNAL_SERVER_ERROR.", []));
