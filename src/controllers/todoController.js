@@ -82,7 +82,6 @@ exports.listTodos = async (req, res) => {
     // Fetch all todos created by the user
     const todos = await Todo.find({ createdBy: userId }).populate({ path: "addedby", select: "displayname" }); ;
 
-    // Separate todos into today, future, and past
     const todayTodos = todos
       .filter((todo) => {
         const todoDate = new Date(todo.date);
